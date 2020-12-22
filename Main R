@@ -1,0 +1,193 @@
+---
+title: 'The Analysis of 2019 Canadian Federal Election '
+author: "Shengfu Zhu"
+date: "Dec 21"
+output:
+  word_document: default
+  bookdown::pdf_document2: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+bibliography: null
+nocite: '@*'
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(knitr)
+```
+
+# Abstract:
+The analysis is designed to predict the outcome of the Canadian federal election in 2019. There are a variety of factors that influence people's choices in elections in their own countries. Therefore, It uses data on age, sex, income, number of children, and how well you like life to make a multiple linear regression model to analysis. Using post-stratification to build an MRP model for my data. Throughout the model, Focus on the difference if everyone had to vote. A multilevel regression model with post-stratification will tell us the relationship between different variables and vote rate.Our null hypothesis(H0) is age and sex have no relationship with voting.And alternative hypothesis(Ha) age and sex will affect voting.
+
+
+# Keywords: 
+2019 Canadian federal election, post-stratification, age, sex, Canadian Election Study,The General Social Survey and Multiple linear regression model.
+
+\newpage
+
+# Introduction
+In the 2019 Canadian Federal Election on October 21, 2019, 338 Prime Minister Justin Trudeau, who elected the 43rd House of Commons of the Canadian Parliament, asked Governor Julie Payette to dissolve the Parliament on September 11 of that year, triggering this The second general election; the date of the election is determined by the Canadian Election Act. After winning the 2015 federal election, the Canadian Liberal Party, which came to power as the ruling party, is aggressively trying to defend the majority government. The other two main parties are elected by the party leaders who took office in 2017: the official opposition Conservative Party and the third largest party in the House of Commons, the New Democratic Party, are led by Andrew Sher and Mian Miancheng, respectively.The statistical analysis on the pre-2019 federal elections wants to predict the different conditions of each citizen. For example, people of different ages have different emotions towards different candidates, which leads to their voting choices, or women may vote. To more handsome candidates. There are many reasons for each citizen's voting choice, so this statistical analysis uses data to find the impact of each variable on the vote.
+
+
+
+**Post-stratification** is a method for adjusting the sampling weights, usually to account for underrepresented groups in the population.Post-stratification involves adjusting the sampling weights so that they sum to the population sizes within each post-stratum. This usually results in decreasing bias because of non-response and underrepresented groups in the population. Post-stratification also tends to result in smaller variance estimates.**Multiple linear regression** is a method used to model the linear relationship between a dependent variable and one or more independent variables.The MLR model is based on several assumptions. Provided the assumptions are satisfied, the regression estimators are optimal in the sense that they are unbiased, efficient, and consistent. Unbiased means that the expected value of the estimator is equal to the true value of the parameter. Efficient means that the estimator has a smaller variance than any other estimator. Consistent means that the bias and variance of the estimator approach zero as the sample size approaches infinity.Analyze gender and age in the two data for predicting the Canadian federal election in 2019,According to the model, 44.7% of people will vote for the Conservative Party.55.3% of people will vote for the Liberal Party.
+
+\newpage
+
+# Methodology
+
+The first data set(**TABLE 1**) is decon for Canadian Election Study(ces)The population in CES database on Canadian citizens and permanent residents. The online sample for the 2019 Canadian Election study was composed of a two-wave panel with a modified rolling-cross section during the campaign period and a post-election recontact wave.Another data set(**TABLE 2**) is GSS(The General Social Survey). The General Social Survey (GSS) is a nationally representative survey of adults in the United States conducted since 1972. The GSS collects data on contemporary American society in order to monitor and explain trends in opinions, attitudes and behaviors. The GSS has adopted questions from earlier surveys which allows researchers to conduct comparisons for up to 80 years.
+
+```{r}
+
+suppressWarnings(suppressMessages(library("cesR")))
+library(tidyverse)
+library(labelled)
+```
+
+```{r,include=FALSE}
+get_decon()
+census_data <- read_csv("census_data.csv")
+
+decon <- decon %>% mutate(sex = case_when(gender == "A woman" ~ "Female",
+                                          gender == "A man" ~ "Male"),
+                          age = 2019 - as.numeric(as.character(yob)),
+                          lr = as.numeric(lr),
+                          vote_party = case_when(lr > 5 ~ 1,
+                                                 lr <= 5 ~ 0)) 
+                          
+
+```
+
+
+
+**Table 1**
+```{r}
+head(census_data)
+
+```
+
+
+
+**Table 2**
+```{r}
+head(decon)
+
+```
+
+
+
+
+
+
+The cleaned data turns `lr` into `vote_party`. The independent variable of `lr` is a number from 1 to 10. The smaller the number is, the more you want to vote for the Conservative Party. The response variable `vote_party` will only include 0 or 1, where 0 means voting for  Liberal Party and 1 means voting for conservatives party.In the two data, I extracted the two predictor variables sex and age respectively.
+
+
+```{r}
+model <- glm(vote_party ~ age + sex, data = decon,family = "binomial")
+
+kable(summary(model)$coefficients,caption="Summary how age and sex affect the vote rate",digits=3)
+
+```
+
+
+**Table 3**
+
+The multiple linear regression model：
+
+$$ y_{vote_party} = \beta_0+\beta_1  x_{age} + \beta_2 x_{sex}+ \epsilon$$
+The fitted model:
+$$ y_{vote_party} = -0.5214+0.002028  x_{age} +0.4450 x_{sex}+ \epsilon$$
+As you can see from the **multiple linear regression model** and the **table 3**Where $y$ represents the proportion of voters who will vote for Liberal Party of Canada, $\beta_0$ represents the intercept of the model and is the probability of voting for Liberal Party at age 0 and male baby which has no pratical meaning.$\beta_1$ represents the relationship between age and voting which means that number is the slope of the relationship and it will tell every one unit increase in age, the vote rate will increase 0.002028.$\beta_2$ represents the probability of voting as a male which means every male have 0.4450 probability will vote to Liberal Party of Canada.$e_i$ is the residuals since there are lots of other factors that can affect the voting rate,such as people's wellness and family wealth.I chose the multiple linear regression model for this prediction because of This model shows the effect of each unit change in each variable on the overall model. Only then can we know in more detail which variables will affect the voting rate.
+
+
+# Result
+
+
+```{r}
+boxplot(age ~ vote_party, data =decon, ylab="age", xlab="vote party",
+        col = "orange", border = "brown", 
+        main = "Voting options for each age group") 
+
+hist(decon$vote_party, main = "Total number of votes per party ", xlab = "Liberal Party - Conservative Party" ,col = "yellow",border = "blue")
+
+
+
+```
+
+In first plot, the y-axis represents different age groups, the 0 on the x-axis represents the number of different age groups who will vote for the Conservative Party, and 1 represents the number of different age groups who will vote for the Liberal Party.The line in the middle of the square in the figure is the average age. It can be seen that the average age of those who voted for the Liberal Party is younger, and the average age of those who voted for the Conservative Party is older, but there is not much difference between the two.On the other hand, The second picture is the total number of votes for each party. It is obvious that the Liberal Party has more votes than the Conservative Party. This result is also consistent with the previous model.
+
+
+
+
+```{r}
+# Here I will perform the post-stratification calculation
+
+census_data$estimate1 <-
+  model %>%
+  predict(newdata = census_data, type="response")
+
+census_data %>%
+  mutate(alp_predict_prop = estimate1*n) %>%
+  summarise(alp_predict = sum(alp_predict_prop)/sum(n))
+```
+
+
+
+We estimate that the proportion of voters in favour of voting for Liberal Party to be 0.4474. This is based off our post-stratification analysis of the proportion of voters in favour of Liberal Party modelled by a multiple linear regression model, which accounted for gender and age. 44.7% vote rate, This data represents that 44.7 percent of citizens will vote for the Conservative Party and 55.3% vote rate for Liberal Party There are 2 parties in the 2019 federal election, of which the Liberal Party has the most votes. The facts also proved that the assumption of our model is correct. The Liberal Party won the election.
+
+
+From the results of the model, the result is the same as reality. In reality, the Liberal Party did win the 2019 Canadian federal election. But there is a very interesting point is that our use of data forecasts are different from reality, which makes us have to consider other factors such as income, family reasons or other reasons. These are not included in our model, indicating that our model is actually not perfect.To put it another way, it might be what changed the voting mindset of citizens between 2017 and 2019. It may be that certain actions of a certain political party caused the loss of supporters. There are many reasons. Therefore, the survey data cannot be perfect, and the results obtained by the model can only be used as a reference.
+
+
+\newpage
+
+# Discussion
+
+Firstly, clean the data with 20,190 observations and the data with 3780 observations, so that makes the predicted variables in these two data are the same.Then we use the clean data to build a generalized linear model which response variable is voting rate and predictor variable are age and sex.After summarize the model, we can find out the estimate value and p-value.The last step is to use everyone’s estimate value to predict everyone’s vote selection.
+
+**alp_predict** is the percentage of citizens who voted for the Conservative Party. 1- **alp_predict** is the percentage of citizens who voted for the Laberial Party.The result of this model is that every year anyone grows up, the probability of voting for the Liberal Party increases by 0.002028.There is also a probability that a male vote for the Conservative Party is 0.44.
+
+Through post-stratification, We know the probability that everyone will vote.For example,there is a girl who is 0.3796553 probability to vote again in 2017.Therefore,we used those estimate to we get an estimated proportion of 0.447 showing that 44.7% of population will vote for Conservative Party in this election and 55.3% will vote for Liberal Party.Throughout the report, we discuss the relationship between voting , age and sex. Also we have a positive relationship between the probability of voting and age.The p-values are extremely close to zero(0.00473) showing that we have strong evidence against the null hypothesis that age has nothing to do with voting.In other words, we conclude that the correlation is positive.Younger people will vote for Conservative Party and Old people will vote for the Liberal Party
+
+
+As mentioned before, there are still many problems with this model. The biggest problem may be that there are too few predictions.In many multiple linear regressions, the independent variables included in the model have no method to determine in advance. If some unimportant variables or variables that have a weak influence on the dependent variable are introduced into the model, the accuracy of the model can be reduced. Therefore, the choice of independent variables is necessary. The basic idea is that the independent variables that have a large impact on the dependent variable can be selected into the regression equation, and at the same time, the independent variables that have a small impact on the dependent variable can be excluded, that is, the so-called Excellent" equation. Therefore, when I was organizing the data, I found that many observations could not be used as predictors, such as language.Only a reasonable increase in the number of predicted values can make the results of the model more refined.
+
+So, we next step should force on add more variables such as income.
+
+
+
+
+
+
+\newpage
+
+# References
+
+
+TO CITE THIS SURVEY FILE: Stephenson, Laura B; Harell, Allison; Rubenson, Daniel; Loewen, Peter John, 2020, '2019 Canadian Election Study - Online Survey',
+           https://doi.org/10.7910/DVN/DUS88V, Harvard Dataverse, V1
+LINK: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DUS88V
+
+TO CITE THIS SURVEY FILE:
+
+- Stephenson, Laura B; Harell, Allison; Rubenson, Daniel; Loewen, Peter John, 2020, '2019 Canadian Election Study - Online Survey', https://doi.org/10.7910/DVN/DUS88V, Harvard Dataverse, V1
+
+- Stephenson, Laura, Allison Harrel, Daniel Rubenson and Peter Loewen. Forthcoming. 'Measuring Preferences and Behaviour in the 2019 Canadian Election Study,' Canadian Journal of Political Science.
+
+Harvard Dataverse. 2020. 2019 Canadian Election Study - Online Survey. [online] Available at: <https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DUS88V> [Accessed 22 December 2020].
+
+En.wikipedia.org. 2020. 2019 Canadian Federal Election. [online] Available at: <https://en.wikipedia.org/wiki/2019_Canadian_federal_election#Background> [Accessed 22 December 2020].
+
+Dataverse.harvard.edu. 2020. 2019 Canadian Election Study - Online Survey Technical Report And Codebook.Pdf - Harvard Dataverse. [online] Available at: <https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/DUS88V/HRZ21G&version=1.0> [Accessed 22 December 2020].
+Stata.com. 2020. [online] Available at: <https://www.stata.com/manuals13/svypoststratification.pdf> [Accessed 22 December 2020].
+
+Gss.norc.org. 2020. About The GSS | NORC. [online] Available at: <https://gss.norc.org/About-The-GSS> [Accessed 22 December 2020].
+
+
+
+
